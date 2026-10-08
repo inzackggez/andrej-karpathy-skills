@@ -1,0 +1,469 @@
+<!--
+  驗收檢查
+  [x] 字型：標題／數字用 "LXGW WenKai TC"，內文用 "Noto Sans TC"，兩者經 Google Fonts CDN 載入；
+      font-family 有 fallback（"LXGW WenKai TC", "Noto Sans TC", sans-serif）
+  [x] 地圖連結：全部用 https://www.google.com/maps/search/?api=1&query=… 短格式，query 照 prompt 提供
+  [x] scrollspy：用 IntersectionObserver，冇 scroll listener
+  [x] reduced-motion：有 @media (prefers-reduced-motion: reduce)，所有動畫靜止
+-->
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三文魚大冒險</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FFFCF6;
+    --ink: #3E3A39;
+    --coral: #F2A497;
+    --yellow: #F6D27A;
+    --water: #A8D3E6;
+    --bamboo: #B9DAA5;
+    --line: 3px solid var(--ink);
+    --title: "LXGW WenKai TC", "Noto Sans TC", sans-serif;
+    --body: "Noto Sans TC", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    line-height: 1.6;
+  }
+  h1, h2, h3, .num { font-family: var(--title); }
+  a { color: inherit; }
+
+  /* 頂端固定選單 */
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--paper);
+    border-bottom: var(--line);
+  }
+  nav ul {
+    display: flex; justify-content: space-around;
+    max-width: 720px; margin: 0 auto; padding: 10px 8px; list-style: none;
+  }
+  nav a {
+    display: block; padding: 6px 14px;
+    border: 3px solid transparent; border-radius: 999px;
+    font-family: var(--title); font-size: 1.05rem; font-weight: 700; text-decoration: none;
+  }
+  nav a.active { background: var(--yellow); border-color: var(--ink); }
+
+  main { max-width: 720px; margin: 0 auto; padding: 0 16px 64px; }
+  section { padding-top: 32px; }
+  h2 { font-size: 1.6rem; margin: 0 0 16px; }
+
+  .card {
+    background: #fff;
+    border: var(--line);
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  /* 首頁 */
+  #home { text-align: center; }
+  .hero-art { width: 100%; max-width: 420px; height: auto; display: block; margin: 0 auto; }
+  h1 { font-size: 2.6rem; margin: 8px 0 0; }
+  .subtitle { margin: 4px 0 16px; font-weight: 700; }
+  .dates { margin: 0 0 16px; }
+  .countdown {
+    display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+  }
+  .countdown div {
+    min-width: 68px; padding: 8px 4px;
+    background: var(--water); border: var(--line); border-radius: 16px;
+  }
+  .countdown .num { display: block; font-size: 1.8rem; font-weight: 700; line-height: 1.2; }
+  .countdown small { font-size: .85rem; }
+  .countdown-label { margin: 12px 0 0; font-size: .9rem; }
+  .on-trip {
+    display: inline-block; padding: 10px 24px;
+    background: var(--coral); border: var(--line); border-radius: 16px;
+    font-family: var(--title); font-size: 1.8rem; font-weight: 700;
+  }
+
+  /* 自駕資訊卡 */
+  .drive { background: var(--bamboo); margin-top: 24px; text-align: left; }
+  .drive .route { font-family: var(--title); font-size: 1.4rem; font-weight: 700; margin: 0; }
+  .drive ul { margin: 8px 0 0; padding-left: 1.2em; }
+
+  /* 每日行程 */
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+  .tabs button {
+    padding: 10px 4px;
+    background: #fff; color: var(--ink);
+    border: var(--line); border-radius: 16px;
+    font-family: var(--title); font-size: 1rem; font-weight: 700; line-height: 1.3;
+    cursor: pointer;
+  }
+  .tabs button small { display: block; font-size: .8rem; }
+  .tabs button[aria-selected="true"] { background: var(--coral); }
+
+  .timeline { list-style: none; margin: 0; padding: 0 0 0 20px; border-left: 3px dashed var(--ink); }
+  .timeline li { position: relative; margin-bottom: 16px; }
+  .timeline li::before {
+    content: ""; position: absolute; left: -31px; top: 22px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--yellow); border: var(--line);
+  }
+  .stop { display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: start; }
+  .stop svg { width: 64px; height: 64px; }
+  .stop .time { font-family: var(--title); font-weight: 700; font-size: 1.05rem; }
+  .stop h3 { margin: 0; font-size: 1.2rem; line-height: 1.35; }
+  .stop p { margin: 4px 0 8px; font-size: .95rem; }
+  .stop .alt { font-size: .8rem; font-weight: 400; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tag {
+    padding: 0 10px; border: 2px solid var(--ink); border-radius: 999px;
+    font-size: .8rem; font-weight: 700;
+  }
+  .tag.drive-t { background: var(--water); }
+  .tag.walk-t { background: var(--bamboo); }
+  .tag.stay-t { background: var(--yellow); }
+  .tag.must { background: var(--coral); }
+  .map-btn {
+    display: inline-block; padding: 2px 12px;
+    background: var(--paper); border: 2px solid var(--ink); border-radius: 999px;
+    font-size: .85rem; font-weight: 700; text-decoration: none;
+  }
+
+  /* 住宿 */
+  .stay { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: center; background: var(--water); }
+  .stay svg { width: 96px; height: 96px; }
+  .stay h3 { margin: 0; font-size: 1.4rem; }
+  .stay p { margin: 4px 0 8px; }
+
+  /* 待辦 */
+  .todo { list-style: none; margin: 0; padding: 0; }
+  .todo li + li { border-top: 2px dashed var(--ink); }
+  .todo label { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; cursor: pointer; }
+  .todo input {
+    appearance: none; flex: none; width: 24px; height: 24px; margin: 0;
+    border: var(--line); border-radius: 8px; background: #fff; cursor: pointer;
+  }
+  .todo input:checked { background: var(--bamboo); }
+  .todo input:checked::after {
+    content: "✓"; display: block; text-align: center; line-height: 18px; font-weight: 700;
+  }
+  .todo input:checked + span { text-decoration: line-through; opacity: .6; }
+
+  footer { text-align: center; font-size: .85rem; padding: 24px 16px; }
+
+  /* 動畫：只用 transform／opacity */
+  @keyframes float { 50% { transform: translateY(-4px) rotate(-3deg); } }
+  @keyframes swim  { 50% { transform: translateX(14px) rotate(4deg); } }
+  @keyframes drift { 50% { transform: translateX(18px); } }
+  @keyframes bounce-in {
+    0%   { opacity: 0; transform: translateY(24px) scale(.96); }
+    60%  { opacity: 1; transform: translateY(-6px) scale(1.01); }
+    100% { opacity: 1; transform: none; }
+  }
+  .float { animation: float 3s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .swim  { animation: swim 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .cloud { animation: drift 7s ease-in-out infinite; }
+  .timeline li { animation: bounce-in .55s ease-out both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SVG 插圖（同一畫風：3px 墨灰線、平塗） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-salmon" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M8 32 C18 18 40 18 50 32 C40 46 18 46 8 32 Z" fill="#F2A497"/>
+      <path d="M50 32 L60 22 L60 42 Z" fill="#F2A497"/>
+      <path d="M26 22 L32 14 L36 22" fill="#F2A497"/>
+      <path d="M22 38 C28 41 34 41 40 38" fill="none"/>
+      <circle cx="17" cy="30" r="2.5" fill="#3E3A39" stroke="none"/>
+    </g>
+    <g id="i-mountain" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round">
+      <path d="M4 54 L24 18 L44 54 Z" fill="#A8D3E6"/>
+      <path d="M28 54 L44 28 L60 54 Z" fill="#B9DAA5"/>
+      <path d="M17 31 L24 18 L31 31 L27 28 L24 32 L21 28 Z" fill="#fff"/>
+    </g>
+    <g id="i-coffee" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M14 26 H44 V46 C44 52 40 56 34 56 H24 C18 56 14 52 14 46 Z" fill="#F6D27A"/>
+      <path d="M44 31 C54 31 54 45 44 45" fill="none"/>
+      <path d="M22 8 C18 13 26 15 22 20 M30 8 C26 13 34 15 30 20 M38 8 C34 13 42 15 38 20" fill="none"/>
+      <path d="M20 36 H38" fill="none"/>
+    </g>
+    <g id="i-bread" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <rect x="4" y="22" width="56" height="20" rx="10" transform="rotate(-25 32 32)" fill="#F6D27A"/>
+      <path d="M20 40 L24 30 M30 36 L34 26 M40 32 L44 22" fill="none"/>
+    </g>
+    <g id="i-pie" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M6 34 H58 L52 50 H12 Z" fill="#F2A497"/>
+      <path d="M6 34 C10 20 54 20 58 34 Z" fill="#F6D27A"/>
+      <path d="M18 34 L24 24 M30 34 L32 22 M42 34 L40 23 M14 29 H50" fill="none"/>
+    </g>
+    <g id="i-taco" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M8 34 C14 26 22 22 30 24 C38 20 48 24 56 32" fill="#B9DAA5"/>
+      <circle cx="22" cy="28" r="3" fill="#F2A497"/>
+      <circle cx="40" cy="27" r="3" fill="#F2A497"/>
+      <path d="M6 48 C6 30 58 30 58 48 Z" fill="#F6D27A"/>
+      <path d="M18 42 v0 M32 40 v0 M46 42 v0" fill="none"/>
+    </g>
+    <g id="i-fall" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M4 10 H22 V50 H4 Z" fill="#B9DAA5"/>
+      <path d="M42 10 H60 V50 H42 Z" fill="#B9DAA5"/>
+      <path d="M22 10 H42 V50 H22 Z" fill="#A8D3E6"/>
+      <path d="M28 16 V30 M36 22 V40 M30 36 V46" fill="none"/>
+      <ellipse cx="32" cy="54" rx="26" ry="6" fill="#A8D3E6"/>
+    </g>
+    <g id="i-train" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M8 22 H34 V48 H8 Z" fill="#F2A497"/>
+      <path d="M34 30 H56 V48 H34 Z" fill="#A8D3E6"/>
+      <path d="M42 18 H50 V30 H42 Z" fill="#3E3A39"/>
+      <path d="M14 28 H28 V38 H14 Z" fill="#fff"/>
+      <circle cx="16" cy="50" r="6" fill="#F6D27A"/>
+      <circle cx="44" cy="50" r="6" fill="#F6D27A"/>
+      <path d="M4 58 H60" fill="none"/>
+    </g>
+    <g id="i-motel" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M10 30 H54 V56 H10 Z" fill="#FFFCF6"/>
+      <path d="M4 32 L32 10 L60 32 Z" fill="#F2A497"/>
+      <path d="M27 40 H37 V56 H27 Z" fill="#F6D27A"/>
+      <path d="M14 38 H22 V46 H14 Z M42 38 H50 V46 H42 Z" fill="#A8D3E6"/>
+    </g>
+    <g id="i-wharf" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <circle cx="46" cy="18" r="9" fill="#F6D27A"/>
+      <path d="M4 36 H44 V42 H4 Z" fill="#F2A497"/>
+      <path d="M12 42 V54 M26 42 V54 M40 42 V54" fill="none"/>
+      <path d="M4 50 C10 46 14 54 20 50 S30 46 36 50 S48 54 60 48" fill="none" stroke="#3E3A39"/>
+    </g>
+    <g id="i-car" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M6 44 V34 L14 32 L22 20 H42 L50 32 L58 34 V44 Z" fill="#F2A497"/>
+      <path d="M24 24 H31 V32 H18 Z M35 24 H41 L46 32 H35 Z" fill="#A8D3E6"/>
+      <circle cx="18" cy="46" r="6" fill="#FFFCF6"/>
+      <circle cx="46" cy="46" r="6" fill="#FFFCF6"/>
+    </g>
+    <g id="i-dinner" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <circle cx="32" cy="34" r="20" fill="#FFFCF6"/>
+      <circle cx="32" cy="34" r="12" fill="#B9DAA5"/>
+      <path d="M6 12 V26 M6 26 V56 M2 12 V22 C2 26 10 26 10 22 V12" fill="none"/>
+      <path d="M58 12 C52 18 52 28 58 30 V56" fill="none"/>
+    </g>
+    <g id="i-luggage" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M24 18 V10 H40 V18" fill="none"/>
+      <rect x="12" y="18" width="40" height="36" rx="6" fill="#F6D27A"/>
+      <path d="M24 18 V54 M40 18 V54" fill="none"/>
+      <circle cx="18" cy="58" r="3" fill="#3E3A39"/>
+      <circle cx="46" cy="58" r="3" fill="#3E3A39"/>
+    </g>
+    <g id="i-home" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M12 30 H52 V56 H12 Z" fill="#B9DAA5"/>
+      <path d="M6 32 L32 10 L58 32 Z" fill="#F6D27A"/>
+      <path d="M32 50 C24 44 24 36 30 37 C31 37 32 38 32 39 C32 38 33 37 34 37 C40 36 40 44 32 50 Z" fill="#F2A497"/>
+    </g>
+  </defs>
+</svg>
+
+<nav aria-label="主選單">
+  <ul>
+    <li><a href="#home" class="active">首頁</a></li>
+    <li><a href="#itinerary">行程</a></li>
+    <li><a href="#stay">住宿</a></li>
+    <li><a href="#todo">待辦</a></li>
+  </ul>
+</nav>
+
+<main>
+  <section id="home">
+    <svg class="hero-art" viewBox="0 0 320 220" role="img" aria-label="雪山同三文魚插圖">
+      <g class="cloud">
+        <path d="M40 46 C40 34 58 32 62 40 C70 30 88 36 84 48 C92 50 90 60 82 60 H44 C34 60 32 48 40 46 Z" fill="#fff" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round"/>
+      </g>
+      <g class="cloud" style="animation-delay:-3s">
+        <path d="M236 30 C236 20 252 18 256 26 C262 18 278 22 276 32 C284 34 282 42 274 42 H240 C230 42 228 32 236 30 Z" fill="#fff" stroke="#3E3A39" stroke-width="3" stroke-linejoin="round"/>
+      </g>
+      <g stroke="#3E3A39" stroke-width="3" stroke-linejoin="round">
+        <path d="M20 150 L110 50 L200 150 Z" fill="#A8D3E6"/>
+        <path d="M130 150 L220 70 L310 150 Z" fill="#B9DAA5"/>
+        <path d="M86 77 L110 50 L134 77 L122 70 L110 82 L98 70 Z" fill="#fff"/>
+        <path d="M203 85 L220 70 L237 85 L228 81 L220 90 L212 81 Z" fill="#fff"/>
+        <path d="M6 150 H314 V206 C314 212 310 214 304 214 H16 C10 214 6 212 6 206 Z" fill="#A8D3E6"/>
+      </g>
+      <path d="M20 172 C36 166 48 178 64 172 M200 196 C216 190 228 202 244 196" fill="none" stroke="#3E3A39" stroke-width="3" stroke-linecap="round"/>
+      <g class="swim"><use href="#i-salmon" transform="translate(70 160) scale(1.1)"/></g>
+      <g class="swim" style="animation-delay:-1.3s"><use href="#i-salmon" transform="translate(190 150) scale(.8)"/></g>
+    </svg>
+    <h1>三文魚大冒險</h1>
+    <p class="subtitle">Salmon Arm 三文魚回流・三日兩夜自駕遊</p>
+    <p class="dates">2026 年 10 月 10 日（六）– 10 月 12 日（一）・2 位成人・全程自駕</p>
+    <div id="countdown" aria-live="polite">
+      <div class="countdown">
+        <div><span class="num" id="cd-d">--</span><small>日</small></div>
+        <div><span class="num" id="cd-h">--</span><small>時</small></div>
+        <div><span class="num" id="cd-m">--</span><small>分</small></div>
+        <div><span class="num" id="cd-s">--</span><small>秒</small></div>
+      </div>
+      <p class="countdown-label">距離出發：10/10（六）09:00 MDT・Calgary 時間</p>
+    </div>
+
+    <div class="card drive">
+      <p class="route">🚗 Calgary ⇄ Salmon Arm</p>
+      <p style="margin:4px 0 0">單程約 5.5 小時車程</p>
+      <ul>
+        <li>Day 3 經 Yoho 國家公園需要 Parks Canada 日票</li>
+        <li>BC 省（PDT, UTC-7）比 Alberta（MDT, UTC-6）慢一小時</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="itinerary">
+    <h2>每日行程</h2>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-day="0">10/10 六<small>去程</small></button>
+      <button role="tab" aria-selected="false" data-day="1">10/11 日<small>三文魚日</small></button>
+      <button role="tab" aria-selected="false" data-day="2">10/12 一<small>回程</small></button>
+    </div>
+    <ol class="timeline" id="timeline"></ol>
+  </section>
+
+  <section id="stay">
+    <h2>住宿資訊</h2>
+    <div class="card stay">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><use class="float" href="#i-motel"/></svg>
+      <div>
+        <h3>Motel Happy Salmon</h3>
+        <p>6410 Trans-Canada Hwy, Salmon Arm<br>2026-10-10 至 2026-10-12，共 2 晚</p>
+        <a class="map-btn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=Motel+Happy+Salmon+Salmon+Arm">🗺️ 地圖</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="todo">
+    <h2>待辦清單</h2>
+    <div class="card">
+      <ul class="todo" id="todo-list"></ul>
+    </div>
+  </section>
+</main>
+
+<footer>三文魚大冒險・2026 秋 🐟</footer>
+
+<script>
+  const MAP = "https://www.google.com/maps/search/?api=1&query=";
+  const MOVE = { drive: ["drive-t", "🚗 自駕"], walk: ["walk-t", "🚶 步行"], stay: ["stay-t", "⏸️ 停留"] };
+
+  const DAYS = [
+    [
+      { time: "09:00 MDT", title: "Calgary 出發", desc: "自駕起點", icon: "car", move: "drive" },
+      { time: "10:15 MDT", title: "Eclipse Coffee Roasters（Canmore）", desc: "本地烘焙咖啡，買杯 flat white 上路", icon: "coffee", move: "stay", q: "Eclipse+Coffee+Roasters+Canmore" },
+      { time: "11:45 PDT", title: "Rogers Pass Summit", desc: "雪山埡口打卡，停留約 20 分鐘", icon: "mountain", move: "stay", q: "Rogers+Pass+Summit+Glacier+National+Park" },
+      { time: "13:00 PDT", title: "La Baguette（Revelstoke）", desc: "法式 bakery 午餐", icon: "bread", move: "stay", q: "La+Baguette+Revelstoke" },
+      { time: "15:30 PDT 前", title: "Shuswap Pie Company（Salmon Arm）", desc: "死線 15:30 關門，買定批做聽日野餐。注意：星期日同星期一休息，錯過就冇", icon: "pie", move: "stay", must: "必買", q: "Shuswap+Pie+Company+Salmon+Arm" },
+      { time: "傍晚・PDT", title: "Salmon Arm 鎮上晚餐", desc: "喺鎮上搵食", icon: "dinner", move: "stay" },
+      { time: "16:00 PDT 後", title: "Motel Happy Salmon check-in", desc: "今晚落腳", icon: "motel", move: "stay", q: "Motel+Happy+Salmon+Salmon+Arm" }
+    ],
+    [
+      { time: "08:30 PDT", title: "Tsútswecw Provincial Park（Adams River）", desc: "Sockeye 三文魚回流奇觀，一早到避開人潮。停車 $15／車，公園免費入場，車輛需 17:30 前離開", icon: "salmon", move: "drive", must: "必去", q: "Tsutswecw+Provincial+Park" },
+      { time: "10:00–12:00 PDT", title: "Salute to the Sockeye＋沿河觀魚步道", desc: "園內活動，vendors 10:00–16:00", icon: "salmon", move: "walk", q: "Tsutswecw+Provincial+Park" },
+      { time: "12:00 PDT", title: "園內野餐", desc: "食尋日買嘅批", icon: "pie", move: "stay", q: "Tsutswecw+Provincial+Park" },
+      { time: "14:30 PDT", title: "Margaret Falls（Herald Provincial Park）", desc: "輕鬆瀑布步道，單程約 500 米，穿過石灰岩青苔峽谷，免費，約 1 小時來回", icon: "fall", move: "walk", q: "Margaret+Falls+Herald+Provincial+Park" },
+      { time: "黃昏・PDT", title: "Salmon Arm waterfront／wharf 散步", desc: "湖邊碼頭睇日落", icon: "wharf", move: "walk", q: "Salmon+Arm+Wharf" },
+      { time: "晚上・PDT", title: "鎮上晚餐", desc: "喺鎮上搵食", icon: "dinner", move: "stay" }
+    ],
+    [
+      { time: "10:00 PDT", title: "Motel Happy Salmon check-out 出發", desc: "收拾行李上路", icon: "luggage", move: "drive", q: "Motel+Happy+Salmon+Salmon+Arm" },
+      { time: "11:00 PDT", title: "Craigellachie Last Spike", desc: "1885 年加拿大太平洋鐵路最後一口釘遺址，路邊停留約 15–20 分鐘，免費", icon: "train", move: "stay", q: "Last+Spike+Craigellachie" },
+      { time: "12:30 PDT", title: "The Taco Club（Revelstoke）", alt: "或 Bowld", desc: "Revelstoke 午餐，206 MacKenzie Ave", icon: "taco", move: "stay", q: "The+Taco+Club+Revelstoke" },
+      { time: "14:30 PDT", title: "Takakkaw Falls（Yoho 國家公園）", desc: "373 米大瀑布。Yoho Valley Road 單程 14 公里約 25 分鐘，瀑布停留 30–45 分鐘，成段繞路約 1.5 小時。需要 Parks Canada 日票；條路通常感恩節後關閉，出發前要再查即時路況", icon: "fall", move: "drive", must: "必去", q: "Takakkaw+Falls+Yoho+National+Park" },
+      { time: "19:30–19:45 MDT", title: "返到 Calgary", desc: "平安返屋企", icon: "home", move: "drive" }
+    ]
+  ];
+
+  const TODOS = [
+    "出發前查 Yoho Valley Road／Takakkaw Falls 即時路況（Parks Canada）",
+    "出發前查 DriveBC Hwy 1 路況",
+    "買 Parks Canada 日票（Day 3 經 Yoho 用）",
+    "星期六 15:30 前一定要到 Shuswap Pie Company（日、一休息）",
+    "準備星期日野餐用品",
+    "帶保暖衣物（10 月 Rogers Pass／Yoho 好凍）",
+    "相機＋充電器"
+  ];
+
+  // 每日行程
+  const timeline = document.getElementById("timeline");
+  const tabs = document.querySelectorAll(".tabs button");
+
+  function renderDay(i) {
+    timeline.innerHTML = DAYS[i].map((s, n) => {
+      const [cls, label] = MOVE[s.move];
+      return `<li class="card" style="animation-delay:${n * 70}ms">
+        <div class="stop">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><use class="float" style="animation-delay:-${n * 0.4}s" href="#i-${s.icon}"/></svg>
+          <div>
+            <div class="time num">${s.time}</div>
+            <h3>${s.title}${s.alt ? ` <span class="alt">${s.alt}</span>` : ""}</h3>
+            <p>${s.desc}</p>
+            <div class="tags">
+              <span class="tag ${cls}">${label}</span>
+              ${s.must ? `<span class="tag must">${s.must}</span>` : ""}
+              ${s.q ? `<a class="map-btn" target="_blank" rel="noopener" href="${MAP}${s.q}">🗺️ 地圖</a>` : ""}
+            </div>
+          </div>
+        </div>
+      </li>`;
+    }).join("");
+    tabs.forEach((b, n) => b.setAttribute("aria-selected", n === i));
+  }
+  tabs.forEach((b, n) => b.addEventListener("click", () => renderDay(n)));
+  renderDay(0);
+
+  // 待辦清單（localStorage 記住勾選）
+  const KEY = "salmon-trip-todos";
+  let done = [];
+  try { done = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) {}
+  const list = document.getElementById("todo-list");
+  list.innerHTML = TODOS.map((t, i) =>
+    `<li><label><input type="checkbox" data-i="${i}" ${done[i] ? "checked" : ""}><span>${t}</span></label></li>`
+  ).join("");
+  list.addEventListener("change", e => {
+    done[e.target.dataset.i] = e.target.checked;
+    try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {}
+  });
+
+  // 出發倒數
+  const TARGET = new Date("2026-10-10T09:00:00-06:00").getTime();
+  const pad = n => String(n).padStart(2, "0");
+  function tick() {
+    const ms = TARGET - Date.now();
+    if (ms <= 0) {
+      document.getElementById("countdown").innerHTML = '<span class="on-trip">旅途中 🎉</span>';
+      clearInterval(timer);
+      return;
+    }
+    const s = Math.floor(ms / 1000);
+    document.getElementById("cd-d").textContent = Math.floor(s / 86400);
+    document.getElementById("cd-h").textContent = pad(Math.floor(s / 3600) % 24);
+    document.getElementById("cd-m").textContent = pad(Math.floor(s / 60) % 60);
+    document.getElementById("cd-s").textContent = pad(s % 60);
+  }
+  const timer = setInterval(tick, 1000);
+  tick();
+
+  // scrollspy：IntersectionObserver
+  const links = document.querySelectorAll("nav a");
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      links.forEach(a => a.classList.toggle("active", a.hash === "#" + entry.target.id));
+    });
+  }, { rootMargin: "-40% 0px -55% 0px" });
+  document.querySelectorAll("main section").forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
