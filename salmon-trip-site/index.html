@@ -2,7 +2,7 @@
   驗收檢查
   [x] 字型：標題／數字用 "LXGW WenKai TC"，內文用 "Noto Sans TC"，兩者經 Google Fonts CDN 載入；
       font-family 有 fallback（"LXGW WenKai TC", "Noto Sans TC", sans-serif）
-  [x] 地圖連結：全部用 https://www.google.com/maps/search/?api=1&query=… 短格式，query 照 prompt 提供
+  [x] 地圖連結：全部用 https://www.google.com/maps/search/?api=1&query=… 短格式，每個時間軸項目都有地圖掣
   [x] scrollspy：用 IntersectionObserver，冇 scroll listener
   [x] reduced-motion：有 @media (prefers-reduced-motion: reduce)，所有動畫靜止
 -->
@@ -360,13 +360,13 @@
 
   const DAYS = [
     [
-      { time: "09:00 MDT", title: "Calgary 出發", desc: "自駕起點", icon: "car", move: "drive" },
+      { time: "09:00 MDT", title: "Calgary 出發", desc: "自駕起點", icon: "car", move: "drive", q: "Calgary+AB" },
       { time: "10:15 MDT", title: "Eclipse Coffee Roasters（Canmore）", desc: "本地烘焙咖啡，買杯 flat white 上路", icon: "coffee", move: "stay", q: "Eclipse+Coffee+Roasters+Canmore" },
       { time: "11:45 PDT", title: "Rogers Pass Summit", desc: "雪山埡口打卡，停留約 20 分鐘", icon: "mountain", move: "stay", q: "Rogers+Pass+Summit+Glacier+National+Park" },
       { time: "13:00 PDT", title: "La Baguette（Revelstoke）", desc: "法式 bakery 午餐", icon: "bread", move: "stay", q: "La+Baguette+Revelstoke" },
       { time: "15:30 PDT 前", title: "Shuswap Pie Company（Salmon Arm）", desc: "死線 15:30 關門，買定批做聽日野餐。注意：星期日同星期一休息，錯過就冇", icon: "pie", move: "stay", must: "必買", q: "Shuswap+Pie+Company+Salmon+Arm" },
-      { time: "傍晚・PDT", title: "Salmon Arm 鎮上晚餐", desc: "喺鎮上搵食", icon: "dinner", move: "stay" },
-      { time: "16:00 PDT 後", title: "Motel Happy Salmon check-in", desc: "今晚落腳", icon: "motel", move: "stay", q: "Motel+Happy+Salmon+Salmon+Arm" }
+      { time: "16:00 PDT 後", title: "Motel Happy Salmon check-in", desc: "今晚落腳", icon: "motel", move: "stay", q: "Motel+Happy+Salmon+Salmon+Arm" },
+      { time: "傍晚・PDT", title: "Salmon Arm 鎮上晚餐", desc: "喺鎮上搵食", icon: "dinner", move: "stay", q: "Restaurants+in+Salmon+Arm+BC" }
     ],
     [
       { time: "08:30 PDT", title: "Tsútswecw Provincial Park（Adams River）", desc: "Sockeye 三文魚回流奇觀，一早到避開人潮。停車 $15／車，公園免費入場，車輛需 17:30 前離開", icon: "salmon", move: "drive", must: "必去", q: "Tsutswecw+Provincial+Park" },
@@ -374,14 +374,14 @@
       { time: "12:00 PDT", title: "園內野餐", desc: "食尋日買嘅批", icon: "pie", move: "stay", q: "Tsutswecw+Provincial+Park" },
       { time: "14:30 PDT", title: "Margaret Falls（Herald Provincial Park）", desc: "輕鬆瀑布步道，單程約 500 米，穿過石灰岩青苔峽谷，免費，約 1 小時來回", icon: "fall", move: "walk", q: "Margaret+Falls+Herald+Provincial+Park" },
       { time: "黃昏・PDT", title: "Salmon Arm waterfront／wharf 散步", desc: "湖邊碼頭睇日落", icon: "wharf", move: "walk", q: "Salmon+Arm+Wharf" },
-      { time: "晚上・PDT", title: "鎮上晚餐", desc: "喺鎮上搵食", icon: "dinner", move: "stay" }
+      { time: "晚上・PDT", title: "鎮上晚餐", desc: "喺鎮上搵食", icon: "dinner", move: "stay", q: "Restaurants+in+Salmon+Arm+BC" }
     ],
     [
       { time: "10:00 PDT", title: "Motel Happy Salmon check-out 出發", desc: "收拾行李上路", icon: "luggage", move: "drive", q: "Motel+Happy+Salmon+Salmon+Arm" },
       { time: "11:00 PDT", title: "Craigellachie Last Spike", desc: "1885 年加拿大太平洋鐵路最後一口釘遺址，路邊停留約 15–20 分鐘，免費", icon: "train", move: "stay", q: "Last+Spike+Craigellachie" },
-      { time: "12:30 PDT", title: "The Taco Club（Revelstoke）", alt: "或 Bowld", desc: "Revelstoke 午餐，206 MacKenzie Ave", icon: "taco", move: "stay", q: "The+Taco+Club+Revelstoke" },
+      { time: "12:30 PDT", title: "The Taco Club（Revelstoke）", alt: "或 Bowld", altQ: "Bowld+Revelstoke", desc: "Revelstoke 午餐，206 MacKenzie Ave", icon: "taco", move: "stay", q: "The+Taco+Club+Revelstoke" },
       { time: "14:30 PDT", title: "Takakkaw Falls（Yoho 國家公園）", desc: "373 米大瀑布。Yoho Valley Road 單程 14 公里約 25 分鐘，瀑布停留 30–45 分鐘，成段繞路約 1.5 小時。需要 Parks Canada 日票；條路通常感恩節後關閉，出發前要再查即時路況", icon: "fall", move: "drive", must: "必去", q: "Takakkaw+Falls+Yoho+National+Park" },
-      { time: "19:30–19:45 MDT", title: "返到 Calgary", desc: "平安返屋企", icon: "home", move: "drive" }
+      { time: "19:30–19:45 MDT", title: "返到 Calgary", desc: "平安返屋企", icon: "home", move: "drive", q: "Calgary+AB" }
     ]
   ];
 
@@ -412,7 +412,8 @@
             <div class="tags">
               <span class="tag ${cls}">${label}</span>
               ${s.must ? `<span class="tag must">${s.must}</span>` : ""}
-              ${s.q ? `<a class="map-btn" target="_blank" rel="noopener" href="${MAP}${s.q}">🗺️ 地圖</a>` : ""}
+              <a class="map-btn" target="_blank" rel="noopener" href="${MAP}${s.q}">🗺️ 地圖</a>
+              ${s.altQ ? `<a class="map-btn" target="_blank" rel="noopener" href="${MAP}${s.altQ}">🗺️ Bowld 地圖</a>` : ""}
             </div>
           </div>
         </div>
